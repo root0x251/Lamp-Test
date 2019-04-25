@@ -33,6 +33,17 @@ class ViewController: UIViewController {
     // pull to refresh
     lazy var refreshControl = UIRefreshControl()
     
+    // search controller
+    let searchController = UISearchController(searchResultsController: nil)
+    var filteretLamp = [LampObj]()
+    var searchBarIsEmpty: Bool {
+        guard let text = searchController.searchBar.text else { return false }
+        return text.isEmpty
+    }
+    var isFiltering: Bool {
+        return searchController.isActive && !searchBarIsEmpty
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // register nib
@@ -60,8 +71,17 @@ class ViewController: UIViewController {
         refreshControl.addTarget(self, action: #selector(refresh), for: .valueChanged)
         refreshControl.tintColor = mainColor
         mainTableView.addSubview(refreshControl)
+        
+        // setup SearchController
+        searchController.searchResultsUpdater = self
+        searchController.obscuresBackgroundDuringPresentation = false
+        searchController.searchBar.placeholder = "Поиск модели"
+        searchController.searchBar.tintColor = .white
+        navigationItem.searchController = searchController
+        definesPresentationContext = true
+        navigationItem.hidesSearchBarWhenScrolling = false
     }
-
+    
     // MARK: - Pull to refresh
     @objc func refresh() {
         print(arrayOfLamp.count)
@@ -134,20 +154,28 @@ class ViewController: UIViewController {
 // MARK: - TableView
 extension ViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return arrayOfLamp.count
+        if isFiltering {
+            return filteretLamp.count
+        } else {
+            return arrayOfLamp.count
+        }
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = mainTableView.dequeueReusableCell(withIdentifier: identifier, for: indexPath) as! TableViewCell
-        let item = arrayOfLamp[indexPath.row]
+        var item: LampObj
+        if isFiltering {
+            item = filteretLamp[indexPath.row]
+        } else {
+            item = arrayOfLamp[indexPath.row]
+        }
         
         // cell bg color
         let bgColorView = UIView()
         bgColorView.backgroundColor = cellBGColor
         cell.selectedBackgroundView = bgColorView
         
-        cell.testLabel.text = item.model
-        
+        cell.testLabel.text = item.brand
         return cell
     }
     
@@ -155,7 +183,7 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
         let indexCell = mainTableView.indexPathForSelectedRow!
         let item = arrayOfLamp[indexCell.row]
         let detailVC = segue.destination as! DetailViewController
-        detailVC.testStr = item.model
+        detailVC.testStr = item.brand
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -180,5 +208,18 @@ extension ViewController: UIAlertViewDelegate {
         self.refreshControl.endRefreshing()
     }
     
+}
+
+// MARK: - Search Bar
+extension ViewController: UISearchResultsUpdating {
+    func updateSearchResults(for searchController: UISearchController) {
+        filterContentForSearch(searchController.searchBar.text!)
+    }
+    func filterContentForSearch(_ searchText: String) {
+        filteretLamp = arrayOfLamp.filter({ (object: LampObj) -> Bool in
+            return object.brand.lowercased().contains(searchText.lowercased())
+        })
+        mainTableView.reloadData()
+    }
 }
 
