@@ -7,7 +7,7 @@
 - [x] <s> Pull to refresh </s> 24.04.2019
 - [x] <s> Alert error </s> 24.04.2019
 - [ ] Load More
-- [ ] Search
+- [x] <s> Search </s> 24.04.2019
 
 
 ### Detail View
